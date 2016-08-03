@@ -545,3 +545,84 @@ Ext.define('TP.StaticIcon', {
         this.callParent([xdata, forceRecreate]);
     }
 });
+
+/* Map Status Icon */
+var mapStore = Ext.create('Ext.data.Store', {
+    fields: ['nr', 'name'],
+    proxy: {
+        type: 'ajax',
+        url:  'panorama.cgi?task=dashboard_list&list=all',
+        reader: {
+            type: 'json',
+            root: 'data'
+        }
+    },
+    autoLoad: false,
+    data : []
+});
+Ext.define('TP.MapStatusIcon', {
+    extend: 'TP.IconWidget',
+
+    iconType: 'map',
+    iconName: 'Map',
+    initComponent: function() {
+        var panel = this;
+        this.callParent();
+    },
+    getGeneralItems: function() {
+        mapStore.load();
+        var panel = this;
+        return([{
+            xtype:          'combobox',
+            name:           'map',
+            fieldLabel:     'Map',
+            store:           mapStore,
+            queryMode:      'remote',
+            triggerAction:  'all',
+            pageSize:        true,
+            selectOnFocus:   true,
+            typeAhead:       true,
+            displayField:   'name',
+            valueField:     'nr',
+            listConfig : {
+                minWidth: 300,
+                maxWidth: 800
+            },
+            matchFieldWidth: false,
+            listeners: {
+                change: function(This, newValue, oldValue, eOpts) {
+                    /* set icon link automatically */
+                    Ext.getCmp('linkForm').getForm().setValues({link: 'dashboard://'+newValue});
+                }
+            }
+        }]);
+    },
+    getName: function() {
+        var tab = Ext.getCmp('tabpan-tab_'+this.xdata.general.map);
+        if(tab) {
+            return(tab.title);
+        }
+        return("");
+    },
+    getDetails: function() {
+        var details = [];
+        var statename = TP.text_status(this.xdata.state, this.hostProblem);
+        details.push([ 'Current Status', '<div class="extinfostate '+statename.toUpperCase()+'">'+statename.toUpperCase()+'<\/div>'
+                                        +(this.acknowledged ?' (<img src='+url_prefix+'plugins/panorama/images/btn_ack.png" style="vertical-align:text-bottom"> acknowledged)':'')
+                                        +(this.downtime     ?' (<img src='+url_prefix+'plugins/panorama/images/btn_downtime.png" style="vertical-align:text-bottom"> in downtime)':'')
+                     ]);
+        return(details);
+    },
+    refreshHandler: function(newStatus) {
+        var This = this;
+        var res = TP.getTabState('tabpan-tab_'+This.xdata.general.map);
+        if(res) {
+            This.downtime     = res.downtime;
+            This.acknowledged = res.acknowledged;
+            This.hostProblem  = res.hostProblem;
+            This.xdata.state  = res.state;
+            newStatus         = res.state;
+        }
+        This.callParent([newStatus]);
+    }
+});

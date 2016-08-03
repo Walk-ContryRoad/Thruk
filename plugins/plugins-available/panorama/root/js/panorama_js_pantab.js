@@ -7,6 +7,8 @@ Ext.define('TP.Pantab', {
     border:      false,
     stateful:    true,
     stateEvents: ['add', 'titlechange'],
+    autoRender:  true,
+    autoShow:    false,
     locked:      start_unlocked, // lock it by default
     initComponent: function() {
         if(this.xdata == undefined) {
@@ -30,9 +32,11 @@ Ext.define('TP.Pantab', {
             TP.initial_create_delay_inactive = 0;
             TP.cur_panels                    = 1;
             TP.num_panels                    = this.window_ids.length;
-            TP.initMask = new Ext.LoadMask(Ext.getBody(), {msg:"loading panel "+TP.cur_panels+'/'+TP.num_panels+"..."});
-            TP.initMask.show();
-            this.keepMask = true;
+            if(!this.hidden) {
+                TP.initMask = new Ext.LoadMask(Ext.getBody(), {msg:"loading panel "+TP.cur_panels+'/'+TP.num_panels+"..."});
+                TP.initMask.show();
+                this.keepMask = true;
+            }
         }
 
         // contains the currently active backends
@@ -42,8 +46,8 @@ Ext.define('TP.Pantab', {
     listeners: {
         beforeclose: function( This, eOpts ) {
             var tabpan = Ext.getCmp('tabpan');
-            tabpan.saveState(); // recalculate open_tabs
-            if(tabpan.open_tabs.length <= 1) {
+            var tabState = tabpan.getState(); // recalculate open_tabs
+            if(tabState.open_tabs.length <= 1) {
                 TP.Msg.msg("info_message~~cannot close last dashboard.");
                 return false;
             }
@@ -431,6 +435,7 @@ Ext.define('TP.Pantab', {
             if(This.mapEl) { This.mapEl.destroy(); This.mapEl = undefined; }
             if(This.map)   { This.map.destroy();   This.map   = undefined; }
         }
+        if(!This.rendered) { return; }
         This.setBaseHtmlClass();
         This.setBackground(xdata);
         if(startTimeouts != false) {
